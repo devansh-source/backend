@@ -1,4 +1,3 @@
-// server/app.js
 import express from "express";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
@@ -12,7 +11,7 @@ dotenv.config();
 const app = express();
 
 // Middlewares
-// Restrict CORS to only your frontend's live URL
+// CHANGE: Restricted CORS to a specific origin
 app.use(cors({
   origin: "https://frontend-bngvhnhxm-devanshs-projects-ea26e1e0.vercel.app"
 }));
@@ -30,7 +29,7 @@ app.get("/", (req, res) => {
 
 // MongoDB connection
 mongoose
-  .connect(process.env.MONGO_URI)
+  .connect(process.env.MONGO_URI) // Removed deprecated options
   .then(() => console.log("MongoDB connected"))
   .catch((err) => {
     console.error("MongoDB connection error:", err);

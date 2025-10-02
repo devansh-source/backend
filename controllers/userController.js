@@ -1,89 +1,55 @@
 import User from "../models/User.js";
 import jwt from "jsonwebtoken";
-import nodemailer from "nodemailer";
+import sendEmail from "../utils/sendEmail.js"; // CHANGE: Import the utility
 
-// --- Nodemailer setup ---
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false, // TLS
-  auth: {
-    user: process.env.EMAIL_USER, // tumhara gmail
-    pass: process.env.EMAIL_PASS, // app password
-  },
-});
-
-// Function to send welcome email
-const sendWelcomeEmail = async (toEmail, username) => {
-  const message = `
-    <h1>Welcome, ${username}!</h1>
-    <p>Thanks for registering. You can now log in to your account.</p>
-  `;
-
-  try {
-    await transporter.sendMail({
-      from: `"Inventory App" <${process.env.EMAIL_USER}>`,
-      to: toEmail,
-      subject: "Welcome to Inventory System",
-      html: message,
-    });
-    console.log("Welcome email sent to:", toEmail);
-  } catch (err) {
-    console.error("Welcome email could not be sent:", err);
-  }
-};
-
-// --- Register User ---
 export const registerUser = async (req, res) => {
-  const { username, email, password } = req.body;
+  try { // CHANGE: Added try...catch block
+    const { username, email, password } = req.body;
+    if (!username || !email || !password) {
+      return res.status(400).json({ error: "All fields are required" });
+    }
 
-  if (!username || !email || !password) {
-    return res.status(400).json({ error: "All fields are required" });
-  }
+    const userExists = await User.findOne({ email });
+    if (userExists) return res.status(400).json({ error: "Email already in use" });
 
-  try {
-    // Check if user or email exists
-    const userExists = await User.findOne({ username });
-    if (userExists) return res.status(400).json({ error: "Username already exists" });
-
-    const emailExists = await User.findOne({ email });
-    if (emailExists) return res.status(400).json({ error: "Email already in use" });
-
-    // Create user
     const user = await User.create({ username, email, password });
 
-    // Send welcome email
-    sendWelcomeEmail(email, username);
+    // Send a Welcome Email using the utility
+    const message = `<h1>Welcome, ${user.username}!</h1><p>Thanks for registering. You can now log in.</p>`;
 
-    // Response for frontend pop message
+    try {
+      await sendEmail({
+        to: user.email,
+        subject: "Welcome to the Inventory System!",
+        html: message,
+      });
+    } catch (err) {
+      console.error("Welcome email could not be sent:", err);
+    }
+    
     res.status(201).json({ message: "Registration successful! You can now log in." });
-
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Server error" });
+    console.error("Registration Error:", err);
+    res.status(500).json({ error: "Server error during registration" });
   }
 };
 
-// --- Login User ---
 export const loginUser = async (req, res) => {
-  const { username, password } = req.body;
-
-  try {
+  try { // CHANGE: Added try...catch block
+    const { username, password } = req.body;
     const user = await User.findOne({
       $or: [{ username }, { email: username }],
     });
 
-    if (!user) return res.status(400).json({ error: "Invalid username or password" });
+    if (!user) return res.status(401).json({ error: "Invalid username or password" });
 
     const isMatch = await user.matchPassword(password);
-    if (!isMatch) return res.status(400).json({ error: "Invalid username or password" });
+    if (!isMatch) return res.status(401).json({ error: "Invalid username or password" });
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1d" });
-
     res.json({ token, username: user.username });
-
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Server error" });
+    console.error("Login Error:", err);
+    res.status(500).json({ error: "Server error during login" });
   }
 };
