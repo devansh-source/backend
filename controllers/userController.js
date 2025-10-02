@@ -2,6 +2,38 @@ import User from "../models/User.js";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
 
+// --- Nodemailer setup ---
+const transporter = nodemailer.createTransport({
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false, // TLS
+  auth: {
+    user: process.env.EMAIL_USER, // tumhara gmail
+    pass: process.env.EMAIL_PASS, // app password
+  },
+});
+
+// Function to send welcome email
+const sendWelcomeEmail = async (toEmail, username) => {
+  const message = `
+    <h1>Welcome, ${username}!</h1>
+    <p>Thanks for registering. You can now log in to your account.</p>
+  `;
+
+  try {
+    await transporter.sendMail({
+      from: `"Inventory App" <${process.env.EMAIL_USER}>`,
+      to: toEmail,
+      subject: "Welcome to Inventory System",
+      html: message,
+    });
+    console.log("Welcome email sent to:", toEmail);
+  } catch (err) {
+    console.error("Welcome email could not be sent:", err);
+  }
+};
+
+// --- Register User ---
 export const registerUser = async (req, res) => {
   const { username, email, password } = req.body;
 
@@ -10,7 +42,7 @@ export const registerUser = async (req, res) => {
   }
 
   try {
-    // Check if user/email exists
+    // Check if user or email exists
     const userExists = await User.findOne({ username });
     if (userExists) return res.status(400).json({ error: "Username already exists" });
 
@@ -20,47 +52,38 @@ export const registerUser = async (req, res) => {
     // Create user
     const user = await User.create({ username, email, password });
 
-    // Setup Nodemailer (Gmail)
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS, // app password
-      },
-    });
+    // Send welcome email
+    sendWelcomeEmail(email, username);
 
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: "Welcome to Inventory App 🎉",
-      html: `<h1>Hi ${username}!</h1><p>Thanks for registering. You can now log in.</p>`,
-    };
+    // Response for frontend pop message
+    res.status(201).json({ message: "Registration successful! You can now log in." });
 
-    transporter.sendMail(mailOptions, (err, info) => {
-      if (err) console.log("Email send error:", err);
-      else console.log("Welcome email sent:", info.response);
-    });
-
-    // Send JSON response to frontend
-    res.status(201).json({ message: "Registration successful! Please check your email." });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Registration failed. Try again later." });
+    res.status(500).json({ error: "Server error" });
   }
 };
 
+// --- Login User ---
 export const loginUser = async (req, res) => {
   const { username, password } = req.body;
 
-  const user = await User.findOne({
-    $or: [{ username }, { email: username }],
-  });
+  try {
+    const user = await User.findOne({
+      $or: [{ username }, { email: username }],
+    });
 
-  if (!user) return res.status(400).json({ error: "Invalid username or password" });
+    if (!user) return res.status(400).json({ error: "Invalid username or password" });
 
-  const isMatch = await user.matchPassword(password);
-  if (!isMatch) return res.status(400).json({ error: "Invalid username or password" });
+    const isMatch = await user.matchPassword(password);
+    if (!isMatch) return res.status(400).json({ error: "Invalid username or password" });
 
-  const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1d" });
-  res.json({ token, username: user.username });
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1d" });
+
+    res.json({ token, username: user.username });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
 };
