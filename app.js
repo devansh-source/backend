@@ -10,16 +10,16 @@ import saleRoutes from "./routes/saleRoutes.js";
 dotenv.config();
 const app = express();
 
-// Middlewares
-// CHANGE: Allowed origins ko ek array mein daalein
+// --- Middlewares ---
+
+// CORS configuration for security
 const allowedOrigins = [
-  "http://localhost:3000", // Aapke local development ke liye
-  "https://frontend-sigma-nine-63.vercel.app" // Aapka naya Vercel URL
+  "http://localhost:3000", // For your local development
+  "https://frontend-sigma-nine-63.vercel.app" // Your Vercel frontend URL
 ];
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Agar request ka origin allowedOrigins mein hai, to allow karein
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -30,25 +30,25 @@ app.use(cors({
 
 app.use(express.json());
 
-// Routes
+// --- Routes ---
 app.use("/api/users", userRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/sales", saleRoutes);
 
-// Health check route
+// --- Health check route ---
 app.get("/", (req, res) => {
-  res.send("Inventory Management System Backend Running!");
+  res.send("Inventory Management System Backend is running!");
 });
 
-// MongoDB connection
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB connected"))
+// --- MongoDB Connection ---
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log("MongoDB connected successfully"))
   .catch((err) => {
     console.error("MongoDB connection error:", err);
-    process.exit(1);
+    process.exit(1); // Exit process with failure
   });
 
+// --- Server Listening ---
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);
