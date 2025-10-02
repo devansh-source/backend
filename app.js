@@ -11,9 +11,23 @@ dotenv.config();
 const app = express();
 
 // Middlewares
+// CHANGE: Allowed origins ko ek array mein daalein
+const allowedOrigins = [
+  "http://localhost:3000", // Aapke local development ke liye
+  "https://frontend-sigma-nine-63.vercel.app" // Aapka naya Vercel URL
+];
+
 app.use(cors({
-  origin: "https://frontend-bngvhnhxm-devanshs-projects-ea26e1e0.vercel.app" // Vercel URL
+  origin: function (origin, callback) {
+    // Agar request ka origin allowedOrigins mein hai, to allow karein
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  }
 }));
+
 app.use(express.json());
 
 // Routes
@@ -28,7 +42,7 @@ app.get("/", (req, res) => {
 
 // MongoDB connection
 mongoose
-  .connect(process.env.MONGO_URI) // Deprecated options removed
+  .connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB connected"))
   .catch((err) => {
     console.error("MongoDB connection error:", err);
