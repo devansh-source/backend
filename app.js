@@ -1,3 +1,4 @@
+// server/app.js
 import express from "express";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
@@ -11,7 +12,10 @@ dotenv.config();
 const app = express();
 
 // Middlewares
-app.use(cors());
+// Restrict CORS to only your frontend's live URL
+app.use(cors({
+  origin: "https://frontend-bngvhnhxm-devanshs-projects-ea26e1e0.vercel.app"
+}));
 app.use(express.json());
 
 // Routes
@@ -26,17 +30,13 @@ app.get("/", (req, res) => {
 
 // MongoDB connection
 mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+  .connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB connected"))
   .catch((err) => {
     console.error("MongoDB connection error:", err);
-    process.exit(1); // Exit if DB fails
+    process.exit(1);
   });
 
-// Render will provide its own PORT in process.env.PORT
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);
