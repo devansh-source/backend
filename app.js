@@ -12,10 +12,10 @@ const app = express();
 
 // --- Middlewares ---
 
-// CORS configuration for security
+// CORRECT: Allow both your local and deployed frontend to make requests
 const allowedOrigins = [
-  "http://localhost:3000", // For your local development
-  "https://frontend-sigma-nine-63.vercel.app" // Your Vercel frontend URL
+  "http://localhost:3000",
+  "https://frontend-sigma-nine-63.vercel.app" // Your new Vercel URL
 ];
 
 app.use(cors({
@@ -45,7 +45,7 @@ mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB connected successfully"))
   .catch((err) => {
     console.error("MongoDB connection error:", err);
-    process.exit(1); // Exit process with failure
+    process.exit(1);
   });
 
 // --- Server Listening ---
