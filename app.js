@@ -11,9 +11,8 @@ dotenv.config();
 const app = express();
 
 // Middlewares
-// CHANGE: Restricted CORS to a specific origin
 app.use(cors({
-  origin: "https://frontend-bngvhnhxm-devanshs-projects-ea26e1e0.vercel.app"
+  origin: "https://frontend-bngvhnhxm-devanshs-projects-ea26e1e0.vercel.app" // Vercel URL
 }));
 app.use(express.json());
 
@@ -29,7 +28,7 @@ app.get("/", (req, res) => {
 
 // MongoDB connection
 mongoose
-  .connect(process.env.MONGO_URI) // Removed deprecated options
+  .connect(process.env.MONGO_URI) // Deprecated options removed
   .then(() => console.log("MongoDB connected"))
   .catch((err) => {
     console.error("MongoDB connection error:", err);
