@@ -7,7 +7,7 @@ const sendEmail = async (options) => {
   const transporter = nodemailer.createTransport({
     host: process.env.EMAIL_HOST,
     port: process.env.EMAIL_PORT,
-    secure: false, // true for 465, false for other ports
+    secure: false, // TLS
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
@@ -21,7 +21,15 @@ const sendEmail = async (options) => {
     html: options.html,
   };
 
-  await transporter.sendMail(mailOptions);
+  // Using try...catch for better error logging
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`Email sent successfully to ${options.to}`);
+  } catch (error) {
+    console.error(`Error sending email to ${options.to}:`, error);
+    // By throwing the error, the function that called sendEmail will know it failed.
+    throw error;
+  }
 };
 
 export default sendEmail;
