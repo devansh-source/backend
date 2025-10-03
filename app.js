@@ -1,50 +1,39 @@
 import express from "express";
-import cors from "cors";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
+import cors from "cors";
+
+import userRoutes from "./routes/userRoutes.js";
+import productRoutes from "./routes/productRoutes.js";
+import saleRoutes from "./routes/saleRoutes.js";
 
 dotenv.config();
 const app = express();
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
-.then(() => console.log("MongoDB connected"))
-.catch(err => console.log(err));
-
-// Middleware
-app.use(cors()); // Enable CORS for all domains
+// Middlewares
+app.use(cors()); // CHANGE: Allow all origins for now
 app.use(express.json());
 
-// Simple User Model
-const userSchema = new mongoose.Schema({
-  name: String,
-  email: String,
-  password: String
-});
-const User = mongoose.model("User", userSchema);
+// Routes
+app.use("/api/users", userRoutes);
+app.use("/api/products", productRoutes);
+app.use("/api/sales", saleRoutes);
 
-// Register Route
-app.post("/api/users/register", async (req, res) => {
-  const { name, email, password } = req.body;
-  const existing = await User.findOne({ email });
-  if (existing) return res.status(400).json({ message: "User already exists" });
-  
-  const user = new User({ name, email, password });
-  await user.save();
-  res.status(201).json({ message: "Registration successful" });
+// Health check route
+app.get("/", (req, res) => {
+  res.send("Inventory Management System Backend Running!");
 });
 
-// Login Route
-app.post("/api/users/login", async (req, res) => {
-  const { email, password } = req.body;
-  const user = await User.findOne({ email, password });
-  if (!user) return res.status(400).json({ message: "Invalid credentials" });
-
-  res.json({ message: "Login successful" });
-});
+// MongoDB connection
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => console.log("MongoDB connected"))
+  .catch((err) => {
+    console.error("MongoDB connection error:", err);
+    process.exit(1);
+  });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on port ${PORT}`);
+});
