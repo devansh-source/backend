@@ -1,35 +1,49 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import mongoose from "mongoose";
 
 dotenv.config();
 const app = express();
-app.use(cors({
-  origin: "https://your-frontend.vercel.app", // replace with your frontend URL
-  methods: ["GET", "POST"],
-  credentials: true
-}));
+
+// Connect to MongoDB
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => console.log("MongoDB connected"))
+.catch(err => console.log(err));
+
+// Middleware
+app.use(cors()); // Enable CORS for all domains
 app.use(express.json());
 
-let users = []; // Simple in-memory storage
+// Simple User Model
+const userSchema = new mongoose.Schema({
+  name: String,
+  email: String,
+  password: String
+});
+const User = mongoose.model("User", userSchema);
 
-// Registration
-app.post("/api/users/register", (req, res) => {
+// Register Route
+app.post("/api/users/register", async (req, res) => {
   const { name, email, password } = req.body;
-  const existingUser = users.find(u => u.email === email);
-  if (existingUser) return res.status(400).json({ message: "User already exists" });
-
-  users.push({ name, email, password });
-  res.json({ message: "Registration successful" });
+  const existing = await User.findOne({ email });
+  if (existing) return res.status(400).json({ message: "User already exists" });
+  
+  const user = new User({ name, email, password });
+  await user.save();
+  res.status(201).json({ message: "Registration successful" });
 });
 
-// Login
-app.post("/api/users/login", (req, res) => {
+// Login Route
+app.post("/api/users/login", async (req, res) => {
   const { email, password } = req.body;
-  const user = users.find(u => u.email === email && u.password === password);
-  if (!user) return res.status(400).json({ message: "Invalid email or password" });
+  const user = await User.findOne({ email, password });
+  if (!user) return res.status(400).json({ message: "Invalid credentials" });
 
-  res.json({ message: "Login successful", name: user.name });
+  res.json({ message: "Login successful" });
 });
 
 const PORT = process.env.PORT || 5000;
