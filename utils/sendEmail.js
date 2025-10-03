@@ -32,4 +32,4 @@ const sendEmail = async (options) => {
   }
 };
 
-export default sendEmail
+export default sendEmail;
