@@ -1,38 +1,42 @@
 import express from "express";
-import dotenv from "dotenv";
-import mongoose from "mongoose";
 import cors from "cors";
-
-import userRoutes from "./routes/userRoutes.js";
-import productRoutes from "./routes/productRoutes.js";
-import saleRoutes from "./routes/saleRoutes.js";
+import dotenv from "dotenv";
 
 dotenv.config();
+
 const app = express();
 
-// ----------------- CORS FIX -----------------
+// Enable CORS for your frontend
 app.use(cors({
-    origin: "https://frontend-df12bu27x-devanshs-projects-ea26e1e0.vercel.app", // your frontend URL
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true,
+  origin: "https://frontend-df12bu27x-devanshs-projects-ea26e1e0.vercel.app", // Vercel frontend
+  credentials: true,
 }));
-// --------------------------------------------
 
 app.use(express.json());
 
-// Routes
-app.use("/api/users", userRoutes);
-app.use("/api/products", productRoutes);
-app.use("/api/sales", saleRoutes);
+// Temporary "database" (in-memory)
+const users = [];
+
+// Register route
+app.post("/api/users/register", (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) return res.status(400).json({ message: "All fields required" });
+
+  const exists = users.find(u => u.email === email);
+  if (exists) return res.status(400).json({ message: "User already exists" });
+
+  users.push({ email, password });
+  res.json({ message: "Registered successfully!" });
+});
+
+// Login route
+app.post("/api/users/login", (req, res) => {
+  const { email, password } = req.body;
+  const user = users.find(u => u.email === email && u.password === password);
+  if (!user) return res.status(400).json({ message: "Invalid credentials" });
+
+  res.json({ message: "Login successful!" });
+});
 
 const PORT = process.env.PORT || 5000;
-
-mongoose.connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-})
-.then(() => {
-    console.log("MongoDB connected");
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-})
-.catch((err) => console.error(err));
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
